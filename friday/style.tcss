@@ -1,0 +1,52 @@
+
+* {
+    scrollbar-size: 1 1;
+}
+
+Screen {
+    align: center middle;
+    & :inline {
+        border: none;
+        height: 50vh;
+    }
+}
+
+Chat {
+    height: 1fr;
+}
+
+ChatView {
+    height: 1fr;
+}
+
+ChatMessage {
+    padding: 1;
+    margin: 1;
+    border: solid #ccc;
+}
+
+ChatInput {
+    margin: 1 0;
+    padding: 0;
+    border: solid #1f1f1f;
+    layout: vertical;
+}
+
+#chat_textarea {
+    height: 5;
+    border-bottom: solid #1f1f1f;
+}
+
+#chat_suggestions {
+    display: none;
+    max-height: 8;
+    border: solid #1f1f1f;
+    border-top: none;
+    background: $panel;
+}
+
+#thinking {
+    height: 0fr;
+    margin: 0 1;
+    width: 100%;
+}

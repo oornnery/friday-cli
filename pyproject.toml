@@ -1,5 +1,5 @@
 [project]
-name = "friday-cli"
+name = "friday"
 version = "0.0.2"
 description = "Add your description here"
 readme = "README.md"
@@ -15,4 +15,4 @@ dependencies = [
     "typer>=0.20.0",
 ]
 [project.scripts]
-friday = "src.__main__:main"
+friday = "friday.__main__:main"
