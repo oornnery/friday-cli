@@ -43,23 +43,23 @@ logging.basicConfig(
 )
 
 
-@dataclass
-class FridayDeps:
-    base_dir: Path
-    env: dict[str, str]
+# @dataclass
+# class FridayDeps:
+#     base_dir: Path
+#     env: dict[str, str]
 
 
-@dataclass
-class ResponseModel:
-    prompt: str
-    output: str
-    command: str | None = None
-    error: str | None = None
+# @dataclass
+# class ResponseModel:
+#     prompt: str
+#     output: str
+#     command: str | None = None
+#     error: str | None = None
 
 
-agent = Agent[FridayDeps, ResponseModel](
+agent = Agent(
     model=MODEL,
-    output_type=ResponseModel,
+    instructions="Your name is Friday. You are a helpful assistant on the command line.",
 )
 
 
@@ -107,6 +107,13 @@ def find(path: str, pattern: str):
     return glob.glob(os.path.join(path, pattern))
 
 
+@agent.tool_plain
+def suggest_command(command: str):
+    """Suggest a command to the user in prompt"""
+    with open(FRIDAY_COMM_PATH, "w") as file:
+        file.write(command)
+
+
 class ChatMessage(Markdown):
     def __init__(self, who: str, text: str, dt: str | None = None, **kwargs) -> None:
         label = "👤 Your" if who == "user" else "🤖 Friday"
@@ -114,13 +121,6 @@ class ChatMessage(Markdown):
         super().__init__(f"{text}", **kwargs)
         self.border_title = Text(label, style="white on green")
         self.border_subtitle = Text(when, style="white on gray")
-
-
-@agent.tool_plain
-def suggest_command(command: str):
-    """Suggest a command to the user in prompt"""
-    with open(FRIDAY_COMM_PATH, "w") as file:
-        file.write(command)
 
 
 class ChatView(VerticalScroll):
