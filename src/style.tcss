@@ -1,0 +1,37 @@
+
+* {
+    scrollbar-size: 1 1;
+}
+
+Screen {
+    align: center middle;
+    & :inline {
+        border: none;
+        height: 50vh;
+    }
+}
+
+Chat {
+    height: 1fr;
+}
+
+ChatView {
+    height: 1fr;
+}
+
+ChatMessage {
+    padding: 1;
+    margin: 1;
+    border: solid #ccc;
+}
+
+ChatInput {
+    height: 5;
+    margin: 1 0;
+}
+
+#thinking {
+    height: 0fr;
+    margin: 0 1;
+    width: 100%;
+}
