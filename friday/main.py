@@ -12,17 +12,17 @@ from pathlib import Path
 import toml
 import yaml
 from dotenv import load_dotenv
-from pydantic_ai import Agent
+from pydantic_ai import Agent, ToolCallPart
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.text import Text
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import VerticalScroll
+from textual.containers import Horizontal, VerticalScroll
 from textual.message import Message
 from textual.widget import Widget
-from textual.widgets import Footer, Label, Markdown, TextArea
+from textual.widgets import Footer, Label, LoadingIndicator, Markdown, TextArea
 
 load_dotenv(Path.home() / ".env")
 
@@ -191,10 +191,64 @@ class ChatInput(TextArea):
         self.post_message(self.Submitted(self, self.text.strip()))
 
 
+class ThinkingIndicator(Widget):
+    """Widget customizado para mostrar o spinner e mensagens de pensamento"""
+
+    DEFAULT_CSS = """
+    ThinkingIndicator {
+        height: auto;
+        padding: 0 1;
+        layout: horizontal;
+        align: left middle;
+    }
+
+    ThinkingIndicator LoadingIndicator {
+        width: auto;
+        height: 1;
+    }
+
+    ThinkingIndicator Label {
+        padding: 0 1;
+        color: $text-muted;
+    }
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._is_loading = False
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            yield LoadingIndicator(id="spinner")
+            yield Label("", id="status-label")
+
+    def on_mount(self) -> None:
+        self.query_one("#spinner", LoadingIndicator).display = False
+
+    def show_thinking(self, message: str = "Thinking...") -> None:
+        """Mostra o spinner com uma mensagem"""
+        self._is_loading = True
+        spinner = self.query_one("#spinner", LoadingIndicator)
+        spinner.display = True
+        self.query_one("#status-label", Label).update(message)
+
+    def show_tool(self, tool_name: str) -> None:
+        """Mostra que uma ferramenta está sendo usada"""
+        message = f"🔧 Using tool: [bold]{tool_name}[/bold]"
+        self.query_one("#status-label", Label).update(message)
+
+    def hide(self, default_message: str = "") -> None:
+        """Esconde o spinner"""
+        self._is_loading = False
+        spinner = self.query_one("#spinner", LoadingIndicator)
+        spinner.display = False
+        self.query_one("#status-label", Label).update(default_message)
+
+
 class Chat(Widget):
     def compose(self) -> ComposeResult:
         yield ChatView()
-        yield Label(id="thinking")
+        yield ThinkingIndicator(id="thinking")
         yield ChatInput(
             placeholder="Type your question...",
         )
@@ -222,8 +276,8 @@ class FridayChatApp(App):
         self._chat = self.query_one(Chat)
         self._chat_view = self._chat.query_one(ChatView)
         self._chat_input = self._chat.query_one(ChatInput)
-        self._loading = self._chat.query_one(Label)
-        self._set_loading_label(loading=False)
+        self._thinking = self._chat.query_one(ThinkingIndicator)
+        self._thinking.hide(MODEL)
         self.set_focus(self._chat_input)
         self._chat_view.scroll_to_latest()
 
@@ -246,31 +300,63 @@ class FridayChatApp(App):
 
         task.add_done_callback(_cleanup)
 
-    def _set_loading_label(self, *, loading: bool, message: str | None = None) -> None:
-        label_text = message
-        if label_text is None:
-            if loading:
-                label_text = (
-                    f"Thinking… ({self._active_requests})"
-                    if self._active_requests > 1
-                    else "Thinking…"
-                )
-            else:
-                label_text = MODEL
-        self._loading.update(label_text)
-
     async def _run_agent_request(self, text: str) -> None:
         self._active_requests += 1
-        self._set_loading_label(loading=True)
+
+        # Mostra o spinner
+        thinking_msg = "Thinking..."
+        if self._active_requests > 1:
+            thinking_msg = f"Thinking... ({self._active_requests})"
+        self._thinking.show_thinking(thinking_msg)
+
         try:
-            reply = await asyncio.to_thread(agent.run_sync, text)
+            # Executa o agente e monitora as ferramentas
+            reply = await asyncio.to_thread(self._run_agent_with_monitoring, text)
             output = reply.output
         except Exception as exc:  # pylint: disable=broad-except
             output = f"Erro ao chamar o agente: {exc}"
+            logging.exception("Erro ao chamar o agente")
         finally:
             self._active_requests = max(0, self._active_requests - 1)
-            self._set_loading_label(loading=self._active_requests > 0)
+            if self._active_requests == 0:
+                self._thinking.hide(MODEL)
+            else:
+                self._thinking.show_thinking(f"Thinking... ({self._active_requests})")
+
         await self._chat_view.add_message("agent", output)
+
+    def _run_agent_with_monitoring(self, text: str):
+        """Executa o agente e monitora o uso de ferramentas"""
+        reply = agent.run_sync(text)
+
+        # Verifica se há mensagens com ferramentas usadas
+        try:
+            tools_used = set()
+            for msg in reply.all_messages():
+                # Mensagens do tipo ModelResponse contém as partes
+                if hasattr(msg, "parts"):
+                    for part in msg.parts:
+                        # ToolCallPart indica que uma ferramenta foi chamada
+                        if isinstance(part, ToolCallPart):
+                            tool_name = part.tool_name
+                            if tool_name not in tools_used:
+                                tools_used.add(tool_name)
+                                # Atualiza o indicador de pensamento
+                                self.call_from_thread(
+                                    self._thinking.show_tool, tool_name
+                                )
+                                # Mostra notificação
+                                self.call_from_thread(
+                                    self.notify,
+                                    f"Using tool: {tool_name}",
+                                    title="🔧 Tool Call",
+                                    severity="information",
+                                    timeout=2,
+                                )
+        except Exception as e:
+            logging.debug(f"Erro ao monitorar ferramentas: {e}")
+
+        return reply
 
     async def action_clear_history(self) -> None:
         if hasattr(self, "_chat_view"):

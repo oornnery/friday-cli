@@ -31,7 +31,7 @@ ChatInput {
 }
 
 #thinking {
-    height: 0fr;
-    margin: 0 1;
+    height: 1;
+    margin: 1;
     width: 100%;
 }
