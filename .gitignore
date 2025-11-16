@@ -8,4 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
-.env
+.ruff_cache
+.env*
+*history.json
