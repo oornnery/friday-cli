@@ -209,6 +209,11 @@ class FridayChatApp(App):
         Binding("ctrl+l", "toggle_llm", "Toggle LLM Model"),
     ]
 
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._agent_tasks: set[asyncio.Task] = set()
+        self._active_requests = 0
+
     def compose(self) -> ComposeResult:
         yield Chat(id="chat")
         yield Footer()
@@ -218,7 +223,7 @@ class FridayChatApp(App):
         self._chat_view = self._chat.query_one(ChatView)
         self._chat_input = self._chat.query_one(ChatInput)
         self._loading = self._chat.query_one(Label)
-        self._loading.content = MODEL
+        self._set_loading_label(loading=False)
         self.set_focus(self._chat_input)
         self._chat_view.scroll_to_latest()
 
@@ -230,14 +235,41 @@ class FridayChatApp(App):
             self.notify("Message cannot be empty", title="Error", severity="error")
             return
         await self._chat_view.add_message("user", text)
-        self._loading.loading = True
+        self._start_agent_request(text)
+
+    def _start_agent_request(self, text: str) -> None:
+        task = asyncio.create_task(self._run_agent_request(text))
+        self._agent_tasks.add(task)
+
+        def _cleanup(completed: asyncio.Task) -> None:
+            self._agent_tasks.discard(completed)
+
+        task.add_done_callback(_cleanup)
+
+    def _set_loading_label(self, *, loading: bool, message: str | None = None) -> None:
+        label_text = message
+        if label_text is None:
+            if loading:
+                label_text = (
+                    f"Thinking… ({self._active_requests})"
+                    if self._active_requests > 1
+                    else "Thinking…"
+                )
+            else:
+                label_text = MODEL
+        self._loading.update(label_text)
+
+    async def _run_agent_request(self, text: str) -> None:
+        self._active_requests += 1
+        self._set_loading_label(loading=True)
         try:
             reply = await asyncio.to_thread(agent.run_sync, text)
             output = reply.output
         except Exception as exc:  # pylint: disable=broad-except
             output = f"Erro ao chamar o agente: {exc}"
         finally:
-            self._loading.loading = False
+            self._active_requests = max(0, self._active_requests - 1)
+            self._set_loading_label(loading=self._active_requests > 0)
         await self._chat_view.add_message("agent", output)
 
     async def action_clear_history(self) -> None:
