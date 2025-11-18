@@ -364,4 +364,4 @@ class FridayChatApp(App):
 
 
 if __name__ == "__main__":
-    FridayChatApp().run(inline=True)
+    FridayChatApp().run()
