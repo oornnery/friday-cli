@@ -16,48 +16,50 @@ $warning: #daa56b;
 /* =========================================================================
    Screen Base
    ========================================================================= */
+* {
+    scrollbar-size: 1 1;
+    scrollbar-background: $bg-panel;
+    scrollbar-background-active: $bg-hover;
+    scrollbar-background-hover: $bg-hover;
+    scrollbar-color: $text-muted;
+    scrollbar-color-active: $accent-blue;
+    scrollbar-color-hover: $accent-green;
+}
 
 Screen {
+    align: center middle;
     background: $bg-main;
     color: $text-primary;
-    layout: vertical;
+    & :inline {
+        border: none;
+        height: 50vh;
+    }
 }
 
-#main-container {
-    width: 100%;
-    height: 1fr;
-    layout: vertical;
-    border: solid $border-color;
-}
-
-#title {
-    dock: top;
-    height: 1;
-    text-align: center;
-    color: $accent-blue;
-    text-style: bold;
-    background: $bg-panel;
-    border-bottom: solid $accent-blue;
-}
 
 /* =========================================================================
-   Chat View
+   Chat
    ========================================================================= */
 
-#chat-view {
+ChatContainer {
     height: 1fr;
-    border: none;
     padding: 1;
+    border: solid $border-color;
     background: $bg-panel;
-    overflow-y: auto;
+}
+
+
+ChatView {
+    height: 1fr;
+    margin: 0;
+    padding: 0;
 }
 
 MessageBubble {
     height: auto;
-    width: 100%;
-    padding: 1 2;
-    margin-bottom: 1;
-    border-left: solid;
+    width: 1fr;
+    padding: 1;
+    border: solid $border-color;
 }
 
 MessageBubble.user {
@@ -76,89 +78,44 @@ MessageBubble.system {
     color: $warning;
 }
 
-/* =========================================================================
-   Chat Input
-   ========================================================================= */
-
-#input-box {
-    height: 8;
-    border-top: solid $accent-blue;
-    padding: 1;
-    background: $bg-main;
-}
-
-#input-area {
+ChatInput {
     height: 5;
-    width: 1fr;
+    padding: 1;
     border: solid $border-color;
     background: $bg-panel;
 }
 
-#input-area:focus {
+ChatInput:focus {
+    height: 7;
     border: solid $accent-blue;
-    background: $bg-hover;
 }
-
-.button-row {
-    height: 2;
-    margin-top: 1;
-}
-
-Button {
-    background: $bg-panel;
-    border: solid $border-color;
-    color: $accent-green;
-    padding: 0 2;
-    margin-right: 1;
-}
-
-Button:hover {
-    background: $bg-hover;
+ChatInput:hover {
     border: solid $accent-green;
-    color: $text-primary;
 }
 
-Button.primary {
-    border: solid $accent-blue;
-    color: $accent-blue;
-}
-
-Button.primary:hover {
-    background: $bg-hover;
-    border: solid $accent-blue;
-}
-
-#status {
-    width: auto;
-    color: $text-muted;
-    text-align: right;
-    margin-left: 1;
+ChatInformation {
+    height: 1;
+    width: 1fr;
+    padding: 0 1;
+    margin: 1;
+    color: gray;
 }
 
 /* =========================================================================
    Header & Footer
    ========================================================================= */
 
-Header {
+Header, Footer, TabbedContent, TabPane {
     background: $bg-panel;
-    border-bottom: solid $border-color;
+    color: $text-muted;
+
 }
 
-Footer {
-    background: $bg-panel;
-    border-top: solid $border-color;
-    color: $text-muted;
+TabbedContent:hover, TabPane:hover {
+    background: $bg-hover;
 }
+
 
 /* =========================================================================
    Scrollbar
    ========================================================================= */
-
-* {
-    scrollbar-background: $bg-panel;
-    scrollbar-background-active: $bg-hover;
-    scrollbar-background-hover: $bg-hover;
-    scrollbar-color: $text-muted;
-    scrollbar-color-active: $accent-blue;
-    scrollbar-color-hover: $accent-green;
-}

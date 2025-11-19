@@ -8,7 +8,7 @@ from rich.text import Text
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, VerticalScroll
+from textual.containers import Container, VerticalScroll
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import (
@@ -16,6 +16,7 @@ from textual.widgets import (
     Label,
     LoadingIndicator,
     Markdown,
+    Select,
     TabbedContent,
     TabPane,
     TextArea,
@@ -47,11 +48,7 @@ class MessageModel:
 
 class MessageBubble(Markdown):
     DEFAULT_CSS = """
-    MessageBubble {
-        padding: 1;
-        border: solid gray;
-        margin: 0 1 1 1;
-    }
+
     """
 
     def __init__(self, message: MessageModel):
@@ -63,9 +60,7 @@ class MessageBubble(Markdown):
 
 class ChatView(VerticalScroll):
     DEFAULT_CSS = """
-    ChatView {
-        height: 1fr;
-    }
+
     """
 
     def __init__(self, **kwargs):
@@ -87,22 +82,14 @@ class ChatView(VerticalScroll):
         pass
 
 
-class ChatInformation(Label):
+class ChatInformation(Widget):
     DEFAULT_CSS = """
-    ChatInformation {
-        height: 1;
-        margin: 1;
-        width: 1fr;
-    }
+
     """
 
 
 class ChatInput(TextArea):
     DEFAULT_CSS = """
-    ChatInput {
-        height: 5;
-        padding: 1;
-    }
     """
     DEFAULT_PLACEHOLDER = "Type your message here"
     BINDINGS = [
@@ -122,15 +109,11 @@ class ChatInput(TextArea):
 
 class ChatContainer(Container):
     DEFAULT_CSS = """
-    ChatContainer {
-        height: 1fr;
-        padding: 1;
-    }
     """
 
     def compose(self) -> ComposeResult:
         yield ChatView()
-        yield ChatInformation("Model: openai:gpt-5.1-mini-codex")
+        yield ChatInformation(Label("Model: openai:gpt-5.1-mini-codex"))
         yield ChatInput(placeholder=ChatInput.DEFAULT_PLACEHOLDER, compact=True)
 
 
@@ -144,11 +127,8 @@ class SettingsContainer(Widget):
 
 class FridayApp(App):
     CSS = """
-    * {
-        scrollbar-size: 1 1;
-    }
     """
-
+    CSS_PATH = "styles.tcss"
     AUTO_FOCUS = "ChatInput"
 
     def compose(self) -> ComposeResult:
